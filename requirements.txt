@@ -1,0 +1,14 @@
+numpy
+pandas
+scikit-learn
+
+fastapi[standard]
+uvicorn[standard]
+pydantic
+joblib
+pickle
+
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==3.2.0
+python-multipart
