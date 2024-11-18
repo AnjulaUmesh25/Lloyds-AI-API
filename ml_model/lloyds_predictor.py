@@ -14,10 +14,11 @@ from fastapi import HTTPException
 ## Import ML model, Encoder and MinMax scaler
 def import_model(path_dir):
     try:
-        # Get the directory of the current script
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        # Construct the full path to the model file
-        model_path = os.path.join(script_dir, 'pkl_files', path_dir)
+        # # Get the directory of the current script
+        # script_dir = os.path.dirname(os.path.abspath(__file__))
+        # # Construct the full path to the model file
+        # model_path = os.path.join(script_dir, 'pkl_files', path_dir)
+        model_path = f"ml_model/pkl_files/{path_dir}"
         with open(model_path, 'rb') as f:
             return pickle.load(f)
     except FileNotFoundError as e:
