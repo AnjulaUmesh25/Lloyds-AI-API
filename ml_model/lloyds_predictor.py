@@ -3,6 +3,9 @@ import pickle
 import os
 import pandas as pd
 import numpy as np
+import shap
+
+from IPython.display import display
 
 from ml_model.list_ import state_dict
 from typing import List
@@ -130,9 +133,8 @@ def create_df(data):
         currnt_drop_columns = ['Total Claims $ L3Y', 
                             'Most Recent Year End Current Assets', 'Most Recent Year End Current Liabilities',
                             'Most Recent Year End Total Assets', 'Most Recent Year End Total Liabilities',
-                            'Most Recent Year End Retained Earnings', 'Most Recent Year End EBIT',
-                            'Most Recent Year End Revenue', '12-18 Months Runway?', 'Coverage(s)',
-                            ]
+                            'Most Recent Year End Retained Earnings', 'Most Recent Year End EBIT', '12-18 Months Runway?',
+                            ]# , 'Coverage(s)', 'Most Recent Year End Revenue'
         X_test_df_final = X_test_df.drop(currnt_drop_columns, axis=1)
         return X_test_df_final
     except KeyError as e:
@@ -157,8 +159,11 @@ def map_state_zipcode(df):
 def feature_engineering(df, le, sc):
     try:
 
-        le_col = 'NAML Eligible?'
-        df[le_col] = le[le_col].transform(df[le_col])
+        le_col = ['Coverage(s)', 'NAML Eligible?']
+        # df[le_col] = le[le_col].transform(df[le_col])
+        for col in le_col:
+            df[col] = le[col].transform(df[col])      
+            
         # Convert 'NAICS/NOPS' to int
         df['NAICS/NOPS'] = df['NAICS/NOPS'].astype(int)
         df2 = sc.transform(df)
@@ -203,11 +208,56 @@ def model(payload):
         df3 = feature_engineering(df2, le, sc)
         ## Prediction
         y_test_pred = lloyd_model.predict(df3)
-        return "ACCEPT" if y_test_pred == 1 else "REJECT"
+        # return "ACCEPT" if y_test_pred == 1 else "REJECT"
+        
+####################################################################
+        if y_test_pred == 1:
+            return {"Status": "ACCEPT"}
+        
+        else:
+            try:
+                explainer = shap.Explainer(lloyd_model)
+                shap_values = explainer(df3)[:,:,1]
+
+                values = pd.Series(shap_values[0].values, index=df3.columns)
+                value_srt = values.abs().max()
+                max_column_name = values.abs().sort_values(ascending=False).index[0]
+
+                return {
+                    "Status": "REJECT",
+                    "Decline Reason": max_column_name
+                }
+            except Exception as e:
+                return {
+                    "Error Message": str(e)
+                }          
+####################################################################
+#    
     except HTTPException as e:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error in prediction model: {e}")
+
+####################################################################
+####################################################################
+
+# def model_feedback(data):
+
+#     best_model = import_model('Lloyd_model.sav')
+
+    
+#     ## Model Explainer
+#     explainer = shap.Explainer(best_model)
+#     shap_values = explainer(data[[0]])[:,:,1]
+
+#     values = pd.Series(shap_values[0].values, index=data.columns)
+#     value_srt = values.abs().max()
+#     max_column_name = values.abs().sort_values(ascending=False).index[0]
+    
+#     print(f"{max_column_name} : {value_srt}")
+
+#     return max_column_name
+
 
 ####################################################################
 ####################################################################

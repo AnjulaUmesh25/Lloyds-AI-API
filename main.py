@@ -58,7 +58,9 @@ async def lloyds_predictor(payload: RequestPayload,
                            token:User = Depends(get_current_active_user)):
     try:
         output = model(payload.dict())
-        return {"Status": output}
+
+        # return {"Status": output}
+        return output
     except HTTPException as e:
         raise e
 
